@@ -1,0 +1,67 @@
+--- /usr/lib/virtualbox/vboxdrv.sh.rpmorg	2018-09-30 10:16:13.967849125 +0200
++++ vboxdrv.sh	2018-09-30 12:11:20.385744938 +0200
+@@ -116,6 +116,20 @@
+     exit 1
+ }
+ 
++mod_sign()
++{
++    BASEDIR=`dirname $PWD`
++    for i in vboxdrv vboxnetadp vboxnetflt vboxpci; do
++      if [ -z "$(modinfo $i|grep signer)" ]; then
++        /usr/src/kernels/$(uname -r)/scripts/sign-file sha256 "$BASEDIR/MOK.priv" "$BASEDIR/MOK.der" $(modinfo -n $i)
++        echo Signed modle $i
++      else 
++        echo Module $i alreday signed
++     fi
++   done
++}
++
++
+ running()
+ {
+     lsmod | grep -q "$1[^_-]"
+@@ -459,6 +473,7 @@
+         failure "Look at $LOG to find out what went wrong"
+     fi
+     rm -f /etc/vbox/module_not_compiled
++    mod_sign
+     depmod -a
+     succ_msg "VirtualBox kernel modules built"
+ }
+@@ -495,6 +510,19 @@
+     fi
+ }
+ 
++mod_sign()
++{
++    BASEDIR=/var/lib/shim-signed/mok
++    for i in vboxdrv vboxnetadp vboxnetflt vboxpci; do
++      if [ -z "$(modinfo $i|grep signer)" ]; then
++        /usr/src/kernels/$(uname -r)/scripts/sign-file sha256 "$BASEDIR/MOK.priv" "$BASEDIR/MOK.der" $(modinfo -n $i)
++        echo Signed modle $i
++      else 
++        echo Module $i alreday signed
++     fi
++   done
++}
++
+ case "$1" in
+ start)
+     start
+@@ -529,11 +557,14 @@
+     stop
+     start
+     ;;
++modsign)
++   mod_sign
++   ;;
+ status)
+     dmnstatus
+     ;;
+ *)
+-    echo "Usage: $0 {start|stop|stop_vms|restart|force-reload|status}"
++    echo "Usage: $0 {start|stop|stop_vms|restart|force-reload|modsign|status}"
+     exit 1
+ esac
+ 
